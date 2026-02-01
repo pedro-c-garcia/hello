@@ -35,6 +35,12 @@
 
 ---
 
+## Continuous Integration (CI) ✅
+- There is a GitHub Actions workflow at `.github/workflows/smoke-test.yml` that runs on push and PR. It installs dependencies, runs `geraXls.py` with a short date range, verifies the output Excel file `out/ci_cotacoes.xlsx` exists, and uploads it as an artifact.
+- For local smoke tests, run: `python geraXls.py --start 2025-01-01 --end 2025-01-03 --output out/ci_cotacoes.xlsx` and confirm the file exists.
+
+---
+
 ## Small, actionable tasks an AI agent can do immediately ✅
 - Add `yfinance`, `pandas`, and `openpyxl` to `requirements.txt`.
 - Add a brief README snippet showing how to run `geraXls.py` and prerequisites (virtualenv activation + required packages).
