@@ -23,3 +23,8 @@ Small utility to fetch recent index quotes and save them to an Excel file.
 Notes:
 - Ensure that `out/` exists or let the script create it; the script will create the output directory if necessary.
 - The script prints fetched history for each ticker and saves an Excel file with raw closes and percentage variations relative to S&P 500.
+
+## Branching & contribution
+- Default branch: **`main`** — create feature branches from `main`.
+- Open pull requests targeting **`main`** for review; use meaningful branch names like `feat/<description>` or `chore/<description>`.
+- Keep changes small and add a short description in the PR body about what changed and why.
