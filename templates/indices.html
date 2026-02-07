@@ -1,0 +1,145 @@
+﻿{% extends "base.html" %}
+
+{% block content %}
+<h1>Cotacoes e comparacao com o S&P 500</h1>
+<p>
+  Seleciona o periodo para carregar os dados. Por defeito, o sistema usa os
+  ultimos 30 dias.
+</p>
+
+<form id="filtro" class="form-row">
+  <label>
+    Data inicio
+    <input type="date" name="start" value="{{ data_inicio }}" required />
+  </label>
+  <label>
+    Data fim
+    <input type="date" name="end" value="{{ data_fim }}" required />
+  </label>
+  <button type="submit">Atualizar</button>
+  <a class="button" id="exportar" href="#">Exportar Excel</a>
+</form>
+
+<div class="chart-wrap">
+  <canvas id="grafico" height="120"></canvas>
+</div>
+<div id="status" class="status"></div>
+
+<div class="table-wrap">
+  <table id="tabela">
+    <thead></thead>
+    <tbody></tbody>
+  </table>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+  const formatoNumero = new Intl.NumberFormat('pt-PT', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  });
+
+  let chart = null;
+
+  function criarCabecalho(colunas) {
+    const thead = document.querySelector('#tabela thead');
+    thead.innerHTML = '';
+    const linha = document.createElement('tr');
+    colunas.forEach((coluna) => {
+      const th = document.createElement('th');
+      th.textContent = coluna;
+      linha.appendChild(th);
+    });
+    thead.appendChild(linha);
+  }
+
+  function criarLinhas(colunas, linhas) {
+    const tbody = document.querySelector('#tabela tbody');
+    tbody.innerHTML = '';
+    linhas.forEach((linha) => {
+      const tr = document.createElement('tr');
+      linha.forEach((valor, idx) => {
+        const td = document.createElement('td');
+        if (idx === 0) {
+          td.textContent = valor;
+        } else if (valor === null || valor === undefined) {
+          td.textContent = '-';
+        } else if (colunas[idx].includes('(var. %)')) {
+          td.textContent = `${formatoNumero.format(valor)}%`;
+        } else {
+          td.textContent = formatoNumero.format(valor);
+        }
+        tr.appendChild(td);
+      });
+      tbody.appendChild(tr);
+    });
+  }
+
+  function montarGrafico(labels, series) {
+    const ctx = document.getElementById('grafico').getContext('2d');
+    const datasets = Object.entries(series).map(([nome, valores], idx) => {
+      const cores = ['#c0460e', '#1b6b5f', '#7a5a3c', '#345995'];
+      return {
+        label: nome,
+        data: valores,
+        borderColor: cores[idx % cores.length],
+        backgroundColor: 'transparent',
+        tension: 0.2
+      };
+    });
+
+    if (chart) {
+      chart.destroy();
+    }
+
+    chart = new Chart(ctx, {
+      type: 'line',
+      data: { labels, datasets },
+      options: {
+        responsive: true,
+        interaction: { mode: 'index', intersect: false },
+        plugins: {
+          legend: { position: 'bottom' }
+        },
+        scales: {
+          y: {
+            ticks: {
+              callback: (value) => formatoNumero.format(value)
+            }
+          }
+        }
+      }
+    });
+  }
+
+  async function carregarDados(start, end) {
+    const status = document.getElementById('status');
+    status.textContent = 'A carregar dados...';
+    const params = new URLSearchParams({ start, end });
+    const response = await fetch(`/api/quotes?${params.toString()}`);
+    if (!response.ok) {
+      status.textContent = 'Erro ao carregar dados.';
+      return;
+    }
+    const dados = await response.json();
+    status.textContent = `Periodo: ${dados.start} ate ${dados.end}`;
+    const exportar = document.getElementById('exportar');
+    exportar.href = `/api/export?${params.toString()}`;
+    montarGrafico(dados.labels, dados.series);
+    criarCabecalho(dados.columns);
+    criarLinhas(dados.columns, dados.rows);
+  }
+
+  const form = document.getElementById('filtro');
+  form.addEventListener('submit', (event) => {
+    event.preventDefault();
+    const formData = new FormData(form);
+    carregarDados(formData.get('start'), formData.get('end'));
+  });
+
+  carregarDados(
+    form.querySelector('input[name="start"]').value,
+    form.querySelector('input[name="end"]').value
+  );
+</script>
+{% endblock %}
